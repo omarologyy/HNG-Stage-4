@@ -8,7 +8,9 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../../firebaseConfig";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -22,15 +24,19 @@ const Register = () => {
     password: "",
   });
 
+  const router = useRouter();
+
   const validate = () => {
     let valid = true;
     let newErrors = { name: "", email: "", phone: "", password: "" };
+
+    const trimmedEmail = email.trim();
 
     if (name.trim().length < 2) {
       newErrors.name = "Full name is required";
       valid = false;
     }
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    if (!trimmedEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       newErrors.email = "Enter a valid email address";
       valid = false;
     }
@@ -47,9 +53,39 @@ const Register = () => {
     return valid;
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (validate()) {
-      Alert.alert("Registration Successful", `Welcome, ${name}!`);
+      try {
+        const trimmedEmail = email.trim();
+
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          trimmedEmail,
+          password
+        );
+        const user = userCredential.user;
+
+        // After successful registration:
+        await updateProfile(userCredential.user, {
+          displayName: name, // this saves the name in Firebase
+        });
+
+        Alert.alert("Registration Successful", `Welcome, ${name}!`);
+        router.push("/home");
+      } catch (error: any) {
+        console.log("Signup error:", error);
+        let message = "Registration Failed";
+
+        if (error.code === "auth/email-already-in-use") {
+          message = "This email address is already registered.";
+        } else if (error.code === "auth/invalid-email") {
+          message = "The email address is invalid.";
+        } else if (error.code === "auth/weak-password") {
+          message = "Password should be at least 6 characters.";
+        }
+
+        Alert.alert(message, error.message);
+      }
     }
   };
 
@@ -77,8 +113,11 @@ const Register = () => {
         placeholder="Email"
         placeholderTextColor="#999"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(text) => setEmail(text.trim())}
         style={styles.input}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
       />
       {errors.email ? (
         <Text style={styles.errorText}>{errors.email}</Text>

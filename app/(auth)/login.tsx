@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { auth } from "../../firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import {
   StyleSheet,
   Text,
@@ -8,18 +10,22 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
 
+  const router = useRouter();
+
   const validate = () => {
     let valid = true;
     let newErrors = { email: "", password: "" };
 
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       newErrors.email = "Please enter a valid email address";
       valid = false;
     }
@@ -32,9 +38,40 @@ const Login = () => {
     return valid;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validate()) {
-      Alert.alert("Login Successful", `Welcome back, ${email}!`);
+      try {
+        const trimmedEmail = email.trim();
+
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          trimmedEmail,
+          password
+        );
+
+        const user = userCredential.user;
+        const displayName = user.displayName || user.email?.split("@")[0]; // fallback
+
+        Alert.alert("Login Successful", `Welcome back, ${displayName}!`);
+        router.push("/home");
+      } catch (error: any) {
+        console.log("Login error:", error);
+
+        let message = "Login failed. Please try again.";
+
+        if (error.code === "auth/user-not-found") {
+          message = "No account found with this email.";
+        } else if (error.code === "auth/wrong-password") {
+          message = "Incorrect password.";
+        } else if (error.code === "auth/invalid-email") {
+          message = "Invalid email address format.";
+        } else if (error.code === "auth/too-many-requests") {
+          message =
+            "Too many failed attempts. Try again later or reset your password.";
+        }
+
+        Alert.alert("Login Failed", message);
+      }
     }
   };
 
@@ -51,8 +88,10 @@ const Login = () => {
         placeholder="Email"
         placeholderTextColor="#999"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(text) => setEmail(text.trim())}
         style={styles.input}
+        autoCapitalize="none"
+        autoCorrect={false}
       />
       {errors.email ? (
         <Text style={styles.errorText}>{errors.email}</Text>
@@ -89,7 +128,12 @@ const Login = () => {
         <Link href="/register" style={styles.link}>
           Sign up
         </Link>
-        <Link href="/">home</Link>
+      </Text>
+
+      <Text style={[styles.footerText, { marginTop: 10 }]}>
+        <Link href="/" style={styles.link}>
+          Back to Home
+        </Link>
       </Text>
     </View>
   );
