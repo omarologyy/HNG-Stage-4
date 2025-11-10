@@ -39,7 +39,7 @@ const Home = () => {
     <View style={styles.container}>
       {/* Top Navigation Bar */}
       <View style={styles.navbar}>
-        <Text style={styles.logo}>Flamez</Text>
+        <Text style={styles.logo}>Flamezzz</Text>
         <View style={styles.icons}>
           <Ionicons
             name="heart-outline"
