@@ -8,8 +8,9 @@
  * @module
  */
 
-import type * as functions_createPost from "../functions/createPost.js";
-import type * as functions_getPosts from "../functions/getPosts.js";
+import type * as createPost from "../createPost.js";
+import type * as getPosts from "../getPosts.js";
+import type * as getUserPosts from "../getUserPosts.js";
 
 import type {
   ApiFromModules,
@@ -26,8 +27,9 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "functions/createPost": typeof functions_createPost;
-  "functions/getPosts": typeof functions_getPosts;
+  createPost: typeof createPost;
+  getPosts: typeof getPosts;
+  getUserPosts: typeof getUserPosts;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

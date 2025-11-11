@@ -18,7 +18,7 @@ import { auth } from "../../firebaseConfig"; // your Firebase auth
 const PostMedia = () => {
   const [image, setImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
-  const createPost = useMutation(api.functions.createPost.default);
+  const createPost = useMutation(api.createPost.default);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

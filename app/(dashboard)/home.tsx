@@ -19,9 +19,17 @@ import { useRouter } from "expo-router";
 // Helper: format time in seconds/minutes
 const timeAgo = (timestamp: number) => {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
   if (seconds < 60) return `${seconds}s ago`;
+
   const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 };
 
 const Home = () => {
@@ -31,7 +39,7 @@ const Home = () => {
 
   // Fetch only posts by this user
   const posts = useQuery(
-    api.functions.getPosts.default,
+    api.getPosts.default,
     userId ? { authorId: userId } : "skip"
   );
 
@@ -64,7 +72,7 @@ const Home = () => {
     <View style={styles.container}>
       {/* Top Navigation Bar */}
       <View style={styles.navbar}>
-        <Text style={styles.logo}>Flamezzz</Text>
+        <Text style={styles.logo}>Flamez</Text>
         <View style={styles.icons}>
           <Ionicons
             name="heart-outline"
