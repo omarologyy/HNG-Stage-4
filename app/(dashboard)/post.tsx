@@ -10,23 +10,56 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-const sampleImages = [
-  "https://picsum.photos/400/400?random=1",
-  "https://picsum.photos/400/400?random=2",
-  "https://picsum.photos/400/400?random=3",
-];
+import * as ImagePicker from "expo-image-picker";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api"; // adjust path as needed
+import { auth } from "../../firebaseConfig"; // your Firebase auth
 
 const PostMedia = () => {
   const [image, setImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
+  const createPost = useMutation(api.functions.createPost.default);
 
   const pickImage = async () => {
-    // Mock: randomly choose one of the sample images
-    const randomImage =
-      sampleImages[Math.floor(Math.random() * sampleImages.length)];
-    setImage(randomImage);
-    Alert.alert("Mock Image Picker", "Random image selected!");
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Error", "You must be signed in to post.");
+        return;
+      }
+
+      if (!caption.trim() && !image) {
+        Alert.alert("Error", "Please write something or add an image.");
+        return;
+      }
+
+      await createPost({
+        authorId: user.uid,
+        authorName: user.displayName || "Anonymous",
+        text: caption.trim(),
+        imageUrl: image || undefined,
+      });
+
+      Alert.alert("Success", "Post created successfully!");
+      setCaption("");
+      setImage(null);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      Alert.alert("Error", "Failed to create post. Please try again.");
+    }
   };
 
   return (
@@ -39,14 +72,13 @@ const PostMedia = () => {
 
         <Text style={styles.title}>New Post</Text>
 
-        <TouchableOpacity>
-          <Text style={styles.shareText}>Share</Text>
+        <TouchableOpacity onPress={handleShare}>
+          <Text style={styles.shareText}>Send</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Scrollable Content */}
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Image Preview */}
+        {/* Image Picker */}
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
           {image ? (
             <Image source={{ uri: image }} style={styles.imagePreview} />
@@ -68,24 +100,6 @@ const PostMedia = () => {
             onChangeText={setCaption}
             multiline
           />
-        </View>
-
-        {/* Extra Options */}
-        <View style={styles.optionsContainer}>
-          <TouchableOpacity style={styles.optionRow}>
-            <Text style={styles.optionText}>Tag people</Text>
-            <Ionicons name="chevron-forward" size={20} color="#777" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionRow}>
-            <Text style={styles.optionText}>Add location</Text>
-            <Ionicons name="chevron-forward" size={20} color="#777" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionRow}>
-            <Text style={styles.optionText}>Advanced settings</Text>
-            <Ionicons name="chevron-forward" size={20} color="#777" />
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -154,23 +168,5 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlignVertical: "top",
     minHeight: 100,
-  },
-  optionsContainer: {
-    marginTop: 25,
-    borderTopWidth: 0.5,
-    borderColor: "#ddd",
-  },
-  optionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderBottomWidth: 0.5,
-    borderColor: "#eee",
-  },
-  optionText: {
-    fontSize: 16,
-    color: "#333",
   },
 });

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,35 +6,60 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebaseConfig";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useRouter } from "expo-router";
 
-const stories = [
-  { id: 1, name: "Your Story", image: "https://i.pravatar.cc/100?img=1" },
-  { id: 2, name: "alex", image: "https://i.pravatar.cc/100?img=2" },
-  { id: 3, name: "jess", image: "https://i.pravatar.cc/100?img=3" },
-  { id: 4, name: "mike", image: "https://i.pravatar.cc/100?img=4" },
-  { id: 5, name: "ella", image: "https://i.pravatar.cc/100?img=5" },
-];
-
-const posts = [
-  {
-    id: 1,
-    user: "alex",
-    image: "https://picsum.photos/500/500?random=1",
-    likes: 120,
-    caption: "Chilling by the beach 🌊",
-  },
-  {
-    id: 2,
-    user: "jess",
-    image: "https://picsum.photos/500/500?random=2",
-    likes: 98,
-    caption: "Sunday vibes ☀️",
-  },
-];
+// Helper: format time in seconds/minutes
+const timeAgo = (timestamp: number) => {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ago`;
+};
 
 const Home = () => {
+  const router = useRouter();
+  const user = auth.currentUser;
+  const userId = user?.uid;
+
+  // Fetch only posts by this user
+  const posts = useQuery(
+    api.functions.getPosts.default,
+    userId ? { authorId: userId } : "skip"
+  );
+
+  // Live time updates every 30s
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Logout confirmation
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to log out?", [
+      {
+        text: "No",
+        style: "cancel",
+      },
+      {
+        text: "Yes",
+        onPress: async () => {
+          await signOut(auth);
+          router.replace("/login");
+        },
+        style: "destructive",
+      },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       {/* Top Navigation Bar */}
@@ -51,63 +76,86 @@ const Home = () => {
         </View>
       </View>
 
-      {/* Stories */}
-      <View style={styles.storiesContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {stories.map((story) => (
-            <View key={story.id} style={styles.story}>
-              <Image source={{ uri: story.image }} style={styles.storyImage} />
-              <Text style={styles.storyName}>{story.name}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-
       {/* Feed */}
       <ScrollView style={styles.feed} showsVerticalScrollIndicator={false}>
-        {posts.map((post) => (
-          <View key={post.id} style={styles.post}>
-            {/* Post Header */}
-            <View style={styles.postHeader}>
-              <Image
-                source={{ uri: `https://i.pravatar.cc/100?u=${post.user}` }}
-                style={styles.postAvatar}
-              />
-              <Text style={styles.postUser}>{post.user}</Text>
-            </View>
-
-            {/* Post Image */}
-            <Image source={{ uri: post.image }} style={styles.postImage} />
-
-            {/* Post Actions */}
-            <View style={styles.postActions}>
-              <View style={styles.actionIcons}>
-                <Ionicons
-                  name="heart-outline"
-                  size={26}
-                  color="black"
-                  style={styles.icon}
+        {!userId ? (
+          <Text style={styles.message}>Please log in to view your posts.</Text>
+        ) : !posts ? (
+          <ActivityIndicator
+            size="large"
+            color="#888"
+            style={{ marginTop: 80 }}
+          />
+        ) : posts.length === 0 ? (
+          <Text style={styles.message}>You haven’t made any posts yet.</Text>
+        ) : (
+          posts.map((post) => (
+            <View key={post._id} style={styles.post}>
+              {/* Post Header */}
+              <View style={styles.postHeader}>
+                <Image
+                  source={{
+                    uri:
+                      user.photoURL ||
+                      "https://i.pravatar.cc/150?u=" + post.authorId,
+                  }}
+                  style={styles.postAvatar}
                 />
-                <Ionicons
-                  name="chatbubble-outline"
-                  size={26}
-                  color="black"
-                  style={styles.icon}
-                />
-                <Ionicons name="paper-plane-outline" size={26} color="black" />
+                <View>
+                  <Text style={styles.postUser}>{post.authorName}</Text>
+                  <Text style={styles.timestamp}>
+                    {timeAgo(post.createdAt)}
+                  </Text>
+                </View>
               </View>
-              <Ionicons name="bookmark-outline" size={26} color="black" />
-            </View>
 
-            {/* Post Details */}
-            <Text style={styles.likes}>{post.likes} likes</Text>
-            <Text style={styles.caption}>
-              <Text style={{ fontWeight: "bold" }}>{post.user} </Text>
-              {post.caption}
-            </Text>
-          </View>
-        ))}
+              {/* Post Image */}
+              {post.imageUrl ? (
+                <Image
+                  source={{ uri: post.imageUrl }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                />
+              ) : null}
+
+              {/* Post Actions */}
+              <View style={styles.postActions}>
+                <View style={styles.actionIcons}>
+                  <Ionicons
+                    name="heart-outline"
+                    size={26}
+                    color="black"
+                    style={styles.icon}
+                  />
+                  <Ionicons
+                    name="chatbubble-outline"
+                    size={26}
+                    color="black"
+                    style={styles.icon}
+                  />
+                  <Ionicons
+                    name="paper-plane-outline"
+                    size={26}
+                    color="black"
+                  />
+                </View>
+                <Ionicons name="bookmark-outline" size={26} color="black" />
+              </View>
+
+              {/* Post Caption */}
+              <Text style={styles.caption}>
+                <Text style={{ fontWeight: "bold" }}>{post.authorName} </Text>
+                {post.text}
+              </Text>
+            </View>
+          ))
+        )}
       </ScrollView>
+
+      {/* Logout Button */}
+      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -137,31 +185,15 @@ const styles = StyleSheet.create({
   icon: {
     marginLeft: 15,
   },
-  storiesContainer: {
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderColor: "#ddd",
-  },
-  story: {
-    alignItems: "center",
-    marginHorizontal: 10,
-  },
-  storyImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 2,
-    borderColor: "#f58529",
-  },
-  storyName: {
-    fontSize: 12,
-    marginTop: 5,
-  },
   feed: {
     flex: 1,
+    marginTop: 10,
   },
   post: {
-    marginBottom: 25,
+    marginBottom: 30,
+    borderBottomWidth: 0.5,
+    borderColor: "#ddd",
+    backgroundColor: "#fff",
   },
   postHeader: {
     flexDirection: "row",
@@ -170,17 +202,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   postAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
     marginRight: 10,
   },
   postUser: {
     fontWeight: "600",
+    fontSize: 15,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: "gray",
   },
   postImage: {
     width: "100%",
     height: 400,
+    backgroundColor: "#eee",
   },
   postActions: {
     flexDirection: "row",
@@ -191,12 +229,27 @@ const styles = StyleSheet.create({
   actionIcons: {
     flexDirection: "row",
   },
-  likes: {
-    fontWeight: "600",
-    paddingHorizontal: 15,
-  },
   caption: {
     paddingHorizontal: 15,
-    paddingTop: 5,
+    paddingBottom: 10,
+    fontSize: 14,
+  },
+  message: {
+    textAlign: "center",
+    marginTop: 100,
+    fontSize: 16,
+    color: "gray",
+  },
+  logoutButton: {
+    alignSelf: "center",
+    marginBottom: 20,
+    backgroundColor: "#ff3b30",
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+  },
+  logoutText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
 });

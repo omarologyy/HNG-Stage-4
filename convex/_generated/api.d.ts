@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as functions_createPost from "../functions/createPost.js";
+import type * as functions_getPosts from "../functions/getPosts.js";
+
 import type {
   ApiFromModules,
   FilterApi,
@@ -22,7 +25,10 @@ import type {
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  "functions/createPost": typeof functions_createPost;
+  "functions/getPosts": typeof functions_getPosts;
+}>;
 declare const fullApiWithMounts: typeof fullApi;
 
 export declare const api: FilterApi<
