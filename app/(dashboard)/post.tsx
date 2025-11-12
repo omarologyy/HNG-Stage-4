@@ -12,13 +12,15 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api"; // adjust path as needed
-import { auth } from "../../firebaseConfig"; // your Firebase auth
+import { api } from "../../convex/_generated/api";
+import { auth } from "../../firebaseConfig";
+import { useRouter } from "expo-router"; // for navigation
 
 const PostMedia = () => {
   const [image, setImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const createPost = useMutation(api.createPost.default);
+  const router = useRouter();
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -56,17 +58,41 @@ const PostMedia = () => {
       Alert.alert("Success", "Post created successfully!");
       setCaption("");
       setImage(null);
+      router.back();
     } catch (error) {
       console.error("Error creating post:", error);
       Alert.alert("Error", "Failed to create post. Please try again.");
     }
   };
 
+  const handleCancel = () => {
+    Alert.alert(
+      "Cancel Post",
+      "Are you sure you want to cancel?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: () => {
+            setCaption("");
+            setImage(null);
+            router.back(); // navigate back or close the post screen
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Top Navbar */}
       <View style={styles.navbar}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleCancel}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
 

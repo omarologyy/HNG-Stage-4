@@ -129,12 +129,6 @@ const Login = () => {
           Sign up
         </Link>
       </Text>
-
-      <Text style={[styles.footerText, { marginTop: 10 }]}>
-        <Link href="/" style={styles.link}>
-          Back to Home
-        </Link>
-      </Text>
     </View>
   );
 };

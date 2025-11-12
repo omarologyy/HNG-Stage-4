@@ -21,13 +21,10 @@ const timeAgo = (timestamp: number) => {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
 
   if (seconds < 60) return `${seconds}s ago`;
-
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
-
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
-
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 };
@@ -53,17 +50,14 @@ const Home = () => {
   // Logout confirmation
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: "No",
-        style: "cancel",
-      },
-      {
-        text: "Yes",
+        text: "Logout",
+        style: "destructive",
         onPress: async () => {
           await signOut(auth);
           router.replace("/login");
         },
-        style: "destructive",
       },
     ]);
   };
@@ -73,14 +67,12 @@ const Home = () => {
       {/* Top Navigation Bar */}
       <View style={styles.navbar}>
         <Text style={styles.logo}>Flamez</Text>
-        <View style={styles.icons}>
-          <Ionicons
-            name="heart-outline"
-            size={24}
-            color="black"
-            style={styles.icon}
-          />
-          <Ionicons name="chatbubble-outline" size={24} color="black" />
+
+        <View style={styles.navRight}>
+          {/* Logout icon in header */}
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutIcon}>
+            <Ionicons name="log-out-outline" size={24} color="#ff3b30" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -104,8 +96,8 @@ const Home = () => {
                 <Image
                   source={{
                     uri:
-                      user.photoURL ||
-                      "https://i.pravatar.cc/150?u=" + post.authorId,
+                      user?.photoURL ||
+                      "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
                   }}
                   style={styles.postAvatar}
                 />
@@ -159,11 +151,6 @@ const Home = () => {
           ))
         )}
       </ScrollView>
-
-      {/* Logout Button */}
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -187,11 +174,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "sans-serif",
   },
-  icons: {
+  navRight: {
     flexDirection: "row",
+    alignItems: "center",
   },
   icon: {
     marginLeft: 15,
+  },
+  logoutIcon: {
+    marginLeft: 20,
   },
   feed: {
     flex: 1,
@@ -214,6 +205,7 @@ const styles = StyleSheet.create({
     height: 45,
     borderRadius: 22.5,
     marginRight: 10,
+    backgroundColor: "#eee",
   },
   postUser: {
     fontWeight: "600",
@@ -247,17 +239,5 @@ const styles = StyleSheet.create({
     marginTop: 100,
     fontSize: 16,
     color: "gray",
-  },
-  logoutButton: {
-    alignSelf: "center",
-    marginBottom: 20,
-    backgroundColor: "#ff3b30",
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-  },
-  logoutText: {
-    color: "#fff",
-    fontWeight: "bold",
   },
 });

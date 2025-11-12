@@ -1,11 +1,18 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  SafeAreaView,
+} from "react-native";
 import React from "react";
 import { Link } from "expo-router";
 import Logo from "../assets/logo.jpg";
 
 const Index = () => {
   return (
-    <>
+    <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         {/* Logo */}
         <Image source={Logo} style={styles.logo} />
@@ -29,12 +36,11 @@ const Index = () => {
             <Text style={styles.registerText}>Create an Account</Text>
           </TouchableOpacity>
         </Link>
-        <Link href="/profile">Profile page</Link>
       </View>
 
       {/* Footer */}
       <Text style={styles.footer}>© 2025 Framez, Inc.</Text>
-    </>
+    </SafeAreaView>
   );
 };
 
@@ -43,19 +49,18 @@ export default Index;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#fff",
   },
   content: {
+    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center", // centers vertically
     paddingHorizontal: 30,
   },
   logo: {
     width: 120,
     height: 120,
     borderRadius: 30,
-    marginTop: 20,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -108,9 +113,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   footer: {
-    position: "absolute",
-    bottom: 30,
+    textAlign: "center",
     fontSize: 12,
     color: "#999",
+    marginBottom: 10,
   },
 });
